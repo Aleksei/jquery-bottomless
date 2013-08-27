@@ -9,8 +9,8 @@
 //
 // For complete documentation.
 
-(function( $ ){
-  $.fn.bottomless = function(options) {
+(function ( $ ) {
+  $.fn.bottomless = function ( options ) {
     var $el = this;
     var url = options.url;
     var now = options.now || false;
@@ -18,8 +18,8 @@
     var skipAndLimit = options.skipAndLimit;
     // Consulted only if skipAndLimit is true, otherwise we just send a page parameter
     var perPage = options.perPage || 20;
-    if (now) {
-      if (options.page === undefined) {
+    if ( now ) {
+      if ( options.page === undefined ) {
         // loadPage will increment this and load page one immediately
         page = 0;
       }
@@ -27,49 +27,59 @@
     var criteria = options.criteria || {};
     var distance = options.distance || 350;
     var method = options.method || 'GET';
-    var $spinner = $(options.spinner);
+    var $spinner = $( options.spinner );
     var atEnd = false;
     var loading = false;
 
     // Infinite scroll
-    var interval = setInterval(function() {
+    var interval = setInterval( function () {
       // Don't try anything fancy when we're not in the DOM, avoids
       // heavy background activity after removal. Also see
       // the aposScrollDestroy event
-      if ($el.parents('body').length) {
-        if ((!atEnd) && (!loading)) {
+      if ( $el.parents( 'body' ).length ) {
+        if ( (!atEnd) && (!loading) ) {
           // Allow for an intentional gap between the content of the
           // infinitely scrolled element and the bottom of the page
           // (although it's foolish to expect anyone to see it...!)
-          var footerHeight = $(document).height() - ($el.offset().top + $el.height());
-          if (($(document).scrollTop() + $(window).height() + distance) >= $(document).height() - footerHeight)
-          {
+          var footerHeight = $( document ).height() - ($el.offset().top + $el.height());
+
+          var scale = 1;
+          if ( typeof options.getScale === 'function' ) {
+            scale = options.getScale();
+
+            if ( typeof scale === 'undefined' ) {
+              scale = 1;
+            }
+          }
+
+          if ( ($( document ).scrollTop() + $( window ).height()/scale + distance) >= $( document ).height() - footerHeight ) {
+
             loadPage();
           }
         }
       }
-    }, 100);
+    }, 100 );
 
-    $el.on('aposScrollReset', function(e, data) {
-      if (data) {
+    $el.on( 'aposScrollReset', function ( e, data ) {
+      if ( data ) {
         criteria = data;
       }
       reset();
-    });
+    } );
 
-    $el.on('aposScrollEnded', function(e) {
+    $el.on( 'aposScrollEnded', function ( e ) {
       end();
-    });
+    } );
 
-    $el.on('aposScrollDestroy', function(e) {
+    $el.on( 'aposScrollDestroy', function ( e ) {
       end();
       // Go away!
-      clearInterval(interval);
-    });
+      clearInterval( interval );
+    } );
 
     function reset() {
-      if (!options.reset) {
-        $el.html('');
+      if ( !options.reset ) {
+        $el.html( '' );
       } else {
         options.reset();
       }
@@ -82,65 +92,65 @@
     function loadPage() {
       page++;
       loading = true;
-      $el.data('loading', true);
+      $el.data( 'loading', true );
       // Copy the criteria and add the page
       var query = {};
-      $.extend(true, query, criteria);
-      if (skipAndLimit) {
+      $.extend( true, query, criteria );
+      if ( skipAndLimit ) {
         query.skip = (page - 1) * perPage;
         query.limit = perPage;
       } else {
         query.page = page;
       }
-      $.ajax({
+      $.ajax( {
         url: url,
         type: method,
         data: query,
         dataType: options.dataType || 'html',
-        success: function(data) {
-          (options.success || function(data) {
-            var $items = $.parseHTML(data);
-            $el.append($items);
-            $el.data('page', page);
-          })(data);
+        success: function ( data ) {
+          (options.success || function ( data ) {
+            var $items = $.parseHTML( data );
+            $el.append( $items );
+            $el.data( 'page', page );
+          })( data );
           stop();
-          $el.trigger('aposScrollLoaded');
+          $el.trigger( 'aposScrollLoaded' );
         },
-        error: function() {
-          $el.data('loading', false);
+        error: function () {
+          $el.data( 'loading', false );
           loading = false;
         },
         statusCode: {
-          404: function() {
-            $el.trigger('aposScrollEnded');
+          404: function () {
+            $el.trigger( 'aposScrollEnded' );
           }
         }
-      });
+      } );
     }
 
     function start() {
-      $el.data('loading', true);
+      $el.data( 'loading', true );
       loading = true;
-      $el.trigger('aposScrollStarted');
+      $el.trigger( 'aposScrollStarted' );
       $spinner.show();
     }
 
     function stop() {
-      $el.data('loading', false);
+      $el.data( 'loading', false );
       loading = false;
-      $el.trigger('aposScrollStopped');
+      $el.trigger( 'aposScrollStopped' );
       $spinner.hide();
     }
 
     function end() {
-      if (loading) {
+      if ( loading ) {
         stop();
       }
       atEnd = true;
       $spinner.hide();
     }
 
-    if (now) {
+    if ( now ) {
       loadPage();
     }
   };
